@@ -96,7 +96,7 @@ class ConnectionPool
     @timeout = options.fetch(:timeout)
     @auto_reload_after_fork = options.fetch(:auto_reload_after_fork)
 
-    @available = TimedStack.new(@size, &block)
+    @available = TimedStack.new(@size, @timeout, &block)
     @key = :"pool-#{@available.object_id}"
     @key_count = :"pool-#{@available.object_id}-count"
     INSTANCES[self] = self if INSTANCES
@@ -122,7 +122,7 @@ class ConnectionPool
       ::Thread.current[@key]
     else
       ::Thread.current[@key_count] = 1
-      ::Thread.current[@key] = @available.pop(options[:timeout] || @timeout)
+      ::Thread.current[@key] = @available.pop(options)
     end
   end
 

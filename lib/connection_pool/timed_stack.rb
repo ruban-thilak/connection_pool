@@ -14,8 +14,8 @@
 #    ts.push conn
 #
 #    conn = ts.pop
-#    ts.pop timeout: 5
-#    #=> raises ConnectionPool::TimeoutError after 5 seconds
+#    ts.pop(timeout: 2)
+#    #=> raises ConnectionPool::TimeoutError after 2 seconds
 
 class ConnectionPool::TimedStack
   attr_reader :max
@@ -24,7 +24,7 @@ class ConnectionPool::TimedStack
   # Creates a new pool with +size+ connections that are created from the given
   # +block+.
 
-  def initialize(size = 0, &block)
+  def initialize(size = 0, timeout = 5, &block)
     @create_block = block
     @created = 0
     @que = []
@@ -32,6 +32,7 @@ class ConnectionPool::TimedStack
     @mutex = Thread::Mutex.new
     @resource = Thread::ConditionVariable.new
     @shutdown_block = nil
+    @timeout = timeout
   end
 
   ##
@@ -56,14 +57,11 @@ class ConnectionPool::TimedStack
   # immediately returned.  If no connection is available within the given
   # timeout a ConnectionPool::TimeoutError is raised.
   #
-  # +:timeout+ is the only checked entry in +options+ and is preferred over
-  # the +timeout+ argument (which will be removed in a future release).  Other
-  # options may be used by subclasses that extend TimedStack.
+  # +:timeout+ is the only checked entry in +options+.
+  # Other options may be used by subclasses that extend TimedStack.
 
-  def pop(timeout = 0.5, options = {})
-    options, timeout = timeout, 0.5 if Hash === timeout
-    timeout = options.fetch :timeout, timeout
-
+  def pop(options = nil)
+    timeout = options&.fetch(:timeout, @timeout) || @timeout
     deadline = current_time + timeout
     @mutex.synchronize do
       loop do

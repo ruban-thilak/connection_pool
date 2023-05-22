@@ -31,26 +31,11 @@ class ConnectionPool
     end
 
     # rubocop:disable Style/MissingRespondToMissing
-    if ::RUBY_VERSION >= "3.0.0"
-      def method_missing(name, *args, **kwargs, &block)
-        with do |connection|
-          connection.send(name, *args, **kwargs, &block)
-        end
-      end
-    elsif ::RUBY_VERSION >= "2.7.0"
-      ruby2_keywords def method_missing(name, *args, &block)
-        with do |connection|
-          connection.send(name, *args, &block)
-        end
-      end
-    else
-      def method_missing(name, *args, &block)
-        with do |connection|
-          connection.send(name, *args, &block)
-        end
+    def method_missing(name, *args, **kwargs, &block)
+      with do |connection|
+        connection.send(name, *args, **kwargs, &block)
       end
     end
-    # rubocop:enable Style/MethodMissingSuper
     # rubocop:enable Style/MissingRespondToMissing
   end
 end
